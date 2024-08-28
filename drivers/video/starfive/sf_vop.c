@@ -41,6 +41,23 @@ static void iotrace_writel(ulong value, void *ptr)
 	writel(value, ptr);
 }
 
+void saif_set_reg(uint32_t addr,uint32_t data,uint32_t shift,uint32_t mask)
+{
+    uint32_t tmp;
+    tmp = readl(addr);
+    tmp &= ~mask;
+    tmp |= (data<<shift) & mask;
+    writel(tmp,addr);
+}
+
+#define  U0_DOM_VOUT_CRG__SAIF_BD_APBS__BASE_ADDR					0x00295C0000
+#define CLK_U0_DC8200_CLK_PIX0_CTRL_REG_ADDR						(U0_DOM_VOUT_CRG__SAIF_BD_APBS__BASE_ADDR + 0x1CU)
+#define CLK_U0_DC8200_CLK_PIX0_SW_CLK_HDMITX0_PIXELCLK_DATA			1
+#define CLK_U0_DC8200_CLK_PIX0_SW_SHIFT								24
+#define CLK_U0_DC8200_CLK_PIX0_SW_MASK								0x1000000U
+
+#define _SWITCH_CLOCK_CLK_U0_DC8200_CLK_PIX0_SOURCE_CLK_HDMITX0_PIXELCLK_ 	saif_set_reg(CLK_U0_DC8200_CLK_PIX0_CTRL_REG_ADDR, CLK_U0_DC8200_CLK_PIX0_SW_CLK_HDMITX0_PIXELCLK_DATA, CLK_U0_DC8200_CLK_PIX0_SW_SHIFT, CLK_U0_DC8200_CLK_PIX0_SW_MASK)
+
 static int sf_vop_power_off(struct udevice *dev)
 {
 	struct udevice *dev_power;
@@ -494,20 +511,11 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 			debug("%s: Failed to read timings\n", __func__);
 			return ret;
 		}
-		int err = clk_set_parent(&priv->dc_pix0, &priv->dc_pix_src);
-		if (err) {
-			debug("failed to set %s clock as %s's parent\n",
-				priv->dc_pix_src.dev->name, priv->dc_pix0.dev->name);
-			return err;
-		}
-
-		ulong new_rate = clk_set_rate(&priv->dc_pix_src, 148500000);
-		debug("new_rate  %ld\n", new_rate);
-
+		_SWITCH_CLOCK_CLK_U0_DC8200_CLK_PIX0_SOURCE_CLK_HDMITX0_PIXELCLK_;
 		dc_hw_init(dev);
 
-		uc_priv->xsize = 1920;
-		uc_priv->ysize = 1080;
+		uc_priv->xsize = 2256;
+		uc_priv->ysize = 1504;
 
 		writel(0xc0001fff, priv->regs_hi+0x00000014);
 		writel(0x00002000, priv->regs_hi+0x00001cc0);
@@ -517,7 +525,7 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		writel(0x021c0780, priv->regs_hi+0x000024e0);
 		writel(0x021c0780, priv->regs_hi+0x00001810);
 		writel(uc_plat->base, priv->regs_hi+0x00001400);
-		writel(0x00001e00, priv->regs_hi+0x00001408);
+		writel(0x00002340, priv->regs_hi+0x00001408);
 		writel(0x00000f61, priv->regs_hi+0x00001ce8);
 		writel(0x00002042, priv->regs_hi+0x00002510);
 		writel(0x808a3156, priv->regs_hi+0x00002508);
@@ -538,15 +546,15 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		writel(0x80060000, priv->regs_hi+0x0000154c);
 		writel(0x00000001, priv->regs_hi+0x00002518);
 		writel(0x00000000, priv->regs_hi+0x00001a28);
-		writel(0x08980780, priv->regs_hi+0x00001430);
-		writel(0x440207d8, priv->regs_hi+0x00001438);
-		writel(0x04650438, priv->regs_hi+0x00001440);
-		writel(0x4220843c, priv->regs_hi+0x00001448);
+		writel(0x09e808d0, priv->regs_hi+0x00001430);
+		writel(0x44900900, priv->regs_hi+0x00001438);
+		writel(0x060d05e0, priv->regs_hi+0x00001440);
+		writel(0xc2f485e3, priv->regs_hi+0x00001448);
 		writel(0x00000000, priv->regs_hi+0x000014b0);
 		writel(0x000000d2, priv->regs_hi+0x00001cd0);
 		writel(0x00000005, priv->regs_hi+0x000014b8);
 		writel(0x00000052, priv->regs_hi+0x000014d0);
-		writel(0xdeadbeef, priv->regs_hi+0x00001528);
+		writel(0xffffffff, priv->regs_hi+0x00001528);
 		writel(0x00001111, priv->regs_hi+0x00001418);
 		writel(0x00000000, priv->regs_hi+0x00001410);
 		writel(0x00000000, priv->regs_hi+0x00002518);

@@ -403,6 +403,10 @@ static void jh7110_gpio_init(void)
 	SYS_IOMUX_COMPLEX(58, 10, 0, 1);
 	SYS_IOMUX_SET_DS(58, 3);
 	SYS_IOMUX_SET_PULL(58, GPIO_PULL_UP);
+
+	/* Enable pwm backlight */
+	SYS_IOMUX_DOEN(22, 0);
+	SYS_IOMUX_DOUT(22, 1);
 }
 
 int board_init(void)

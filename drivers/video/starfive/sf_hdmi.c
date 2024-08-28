@@ -38,14 +38,23 @@ static void inno_hdmi_detect(struct sf_hdmi_priv *priv)
 	hdmi_write(priv,0xf, 0x1cc); //set 0x1cc[3:0] to 4'b1111
 	//while(!(hdmi_read(0x1cd)  == 0x55));
 
-	/*turn on pre-PLL*/
-	val = hdmi_read(priv,0x1a0);
-	val &= ~(0x1);
-	hdmi_write(priv,val, 0x1a0);
-	/*turn on post-PLL*/
-	val = hdmi_read(priv,0x1aa);
-	val &= ~(0x1);
-	hdmi_write(priv,val, 0x1aa);
+	hdmi_write(priv,0x1, 0x1a0);
+	hdmi_write(priv,0xf, 0x1aa);
+	hdmi_write(priv,0x1, 0x1a1);
+	hdmi_write(priv,0xf0, 0x1a2);
+	hdmi_write(priv,0xeb, 0x1a3);
+	hdmi_write(priv,0x25, 0x1a4);
+	hdmi_write(priv,0x3, 0x1a5);
+	hdmi_write(priv,0x64, 0x1a6);
+	hdmi_write(priv,0x1, 0x1ab);
+	hdmi_write(priv,0x14, 0x1ac);
+	hdmi_write(priv,0x1, 0x1ad);
+	hdmi_write(priv,0xe, 0x1aa);
+	hdmi_write(priv,0xc0, 0x1a2);
+	hdmi_write(priv,0xd6, 0x1d3);
+	hdmi_write(priv,0xa3, 0x1d2);
+	hdmi_write(priv,0xb0, 0x1d1);
+	hdmi_write(priv,0x0, 0x1a0);
 
 	/*wait for pre-PLL and post-PLL lock*/
 	while(!(hdmi_read(priv,0x1a9) & 0x1));
@@ -54,7 +63,7 @@ static void inno_hdmi_detect(struct sf_hdmi_priv *priv)
 	/*turn on LDO*/
 	hdmi_write(priv,0x7, 0x1b4);
 	/*turn on serializer*/
-	hdmi_write(priv,0x70, 0x1be);
+	hdmi_write(priv,0x71, 0x1be);
 }
 
 static void inno_hdmi_tx_phy_power_down(struct sf_hdmi_priv *priv)
@@ -448,7 +457,23 @@ static int inno_hdmi_enable(struct udevice *dev, int panel_bpp,
 	debug("inno_hdmi_enable on\r\n");
 	inno_hdmi_detect(priv);
 	inno_hdmi_tx_phy_power_down(priv);
-	inno_hdmi_tx_phy_param_config(priv,RES_1920_1080P_60HZ);
+	//inno_hdmi_tx_phy_param_config(priv,RES_1920_1080P_60HZ);
+
+	hdmi_write(priv,0xe8,0x9);
+	hdmi_write(priv,0x9,0xa);
+	hdmi_write(priv,0x18,0xb);
+	hdmi_write(priv,0x1,0xc);
+	hdmi_write(priv,0xe8,0xd);
+	hdmi_write(priv,0x0, 0xe);
+	hdmi_write(priv,0x20,0xf);
+	hdmi_write(priv,0x0, 0x10);
+	hdmi_write(priv,0xd, 0x11);
+	hdmi_write(priv,0x6, 0x12);
+	hdmi_write(priv,0x2d,0x13);
+	hdmi_write(priv,0x2a,0x14);
+	hdmi_write(priv,0x6, 0x15);
+	hdmi_write(priv,0x5, 0x8);
+
 	inno_hdmi_tx_phy_power_on(priv);
 	inno_hdmi_tmds_driver_on(priv);
 	/*data sync*/
