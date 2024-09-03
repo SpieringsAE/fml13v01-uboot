@@ -396,6 +396,7 @@ static void jh7110_gpio_init(void)
 	 * Set drive strength to 12mA
 	 * Set gpio pull up
 	 */
+#if 0
 	SYS_IOMUX_COMPLEX(57, 9, 0, 1);
 	SYS_IOMUX_SET_DS(57, 3);
 	SYS_IOMUX_SET_PULL(57, GPIO_PULL_UP);
@@ -403,6 +404,11 @@ static void jh7110_gpio_init(void)
 	SYS_IOMUX_COMPLEX(58, 10, 0, 1);
 	SYS_IOMUX_SET_DS(58, 3);
 	SYS_IOMUX_SET_PULL(58, GPIO_PULL_UP);
+#endif
+
+	/* Must enable wifi power before PCIE init */
+	SYS_IOMUX_DOEN(23, 0);
+	SYS_IOMUX_DOUT(23, 1);
 
 	/* Enable pwm backlight */
 	SYS_IOMUX_DOEN(22, 0);
