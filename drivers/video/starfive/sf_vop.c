@@ -522,8 +522,8 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		//writel(uc_plat->base+0x1fa400, priv->regs_hi+0x00001530);
 		writel(0x00000000, priv->regs_hi+0x00001800);
 		writel(0x00000000, priv->regs_hi+0x000024d8);
-		writel(0x021c0780, priv->regs_hi+0x000024e0);
-		writel(0x021c0780, priv->regs_hi+0x00001810);
+		writel(0x02f008d0, priv->regs_hi+0x000024e0);
+		writel(0x02f008d0, priv->regs_hi+0x00001810);
 		writel(uc_plat->base, priv->regs_hi+0x00001400);
 		writel(0x00002340, priv->regs_hi+0x00001408);
 		writel(0x00000f61, priv->regs_hi+0x00001ce8);
