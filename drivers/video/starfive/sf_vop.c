@@ -428,7 +428,7 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 	if (!ofnode_valid(remote))
 		return -EINVAL;
 	remote_vop_id = ofnode_read_u32_default(remote, "reg", -1);
-	uc_priv->bpix = VIDEO_BPP32;
+	uc_priv->bpix = VIDEO_BPP16;
 	debug("remote_vop_id  %d\n", remote_vop_id);
 
 	/*
@@ -522,28 +522,28 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		//writel(uc_plat->base+0x1fa400, priv->regs_hi+0x00001530);
 		writel(0x00000000, priv->regs_hi+0x00001800);
 		writel(0x00000000, priv->regs_hi+0x000024d8);
-		writel(0x021c0780, priv->regs_hi+0x000024e0);
-		writel(0x021c0780, priv->regs_hi+0x00001810);
+		writel(0x02f008d0, priv->regs_hi+0x000024e0);
+		writel(0x02f008d0, priv->regs_hi+0x00001810);
 		writel(uc_plat->base, priv->regs_hi+0x00001400);
-		writel(0x00002340, priv->regs_hi+0x00001408);
+		writel(0x000011a0, priv->regs_hi+0x00001408);
 		writel(0x00000f61, priv->regs_hi+0x00001ce8);
 		writel(0x00002042, priv->regs_hi+0x00002510);
 		writel(0x808a3156, priv->regs_hi+0x00002508);
 		writel(0x8008e1b2, priv->regs_hi+0x00002500);
-		writel(0x18000000, priv->regs_hi+0x00001518);
+		writel(0x10000000, priv->regs_hi+0x00001518);
 		writel(0x00003000, priv->regs_hi+0x00001cc0);
-		writel(0x00060000, priv->regs_hi+0x00001540);
+		writel(0x00130000, priv->regs_hi+0x00001540);
 		writel(0x00000001, priv->regs_hi+0x00002540);
-		writel(0x80060000, priv->regs_hi+0x00001540);
-		writel(0x00060000, priv->regs_hi+0x00001544);
+		writel(0x80130000, priv->regs_hi+0x00001540);
+		writel(0x00130000, priv->regs_hi+0x00001544);
 		writel(0x00000002, priv->regs_hi+0x00002544);
-		writel(0x80060000, priv->regs_hi+0x00001544);
-		writel(0x00060000, priv->regs_hi+0x00001548);
+		writel(0x80130000, priv->regs_hi+0x00001544);
+		writel(0x00130000, priv->regs_hi+0x00001548);
 		writel(0x0000000c, priv->regs_hi+0x00002548);
-		writel(0x80060000, priv->regs_hi+0x00001548);
-		writel(0x00060000, priv->regs_hi+0x0000154c);
+		writel(0x80130000, priv->regs_hi+0x00001548);
+		writel(0x00130000, priv->regs_hi+0x0000154c);
 		writel(0x0000000d, priv->regs_hi+0x0000254c);
-		writel(0x80060000, priv->regs_hi+0x0000154c);
+		writel(0x80130000, priv->regs_hi+0x0000154c);
 		writel(0x00000001, priv->regs_hi+0x00002518);
 		writel(0x00000000, priv->regs_hi+0x00001a28);
 		writel(0x09e808d0, priv->regs_hi+0x00001430);
@@ -551,9 +551,9 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		writel(0x060d05e0, priv->regs_hi+0x00001440);
 		writel(0xc2f485e3, priv->regs_hi+0x00001448);
 		writel(0x00000000, priv->regs_hi+0x000014b0);
-		writel(0x000000d2, priv->regs_hi+0x00001cd0);
+		writel(0x0000000a, priv->regs_hi+0x00001cd0);
 		writel(0x00000005, priv->regs_hi+0x000014b8);
-		writel(0x00000052, priv->regs_hi+0x000014d0);
+		//writel(0x00000052, priv->regs_hi+0x000014d0);
 		writel(0xffffffff, priv->regs_hi+0x00001528);
 		writel(0x00001111, priv->regs_hi+0x00001418);
 		writel(0x00000000, priv->regs_hi+0x00001410);
