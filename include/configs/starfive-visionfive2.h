@@ -342,6 +342,34 @@
 			"run distro_bootenv_${bootdev_s}; "	\
 		"done; \0"
 
+#ifdef BOOTEFI_NAME
+#define JH7110_EFI_BOOTENV	\
+	"efi_boot_env="			\
+		"for bootdev_s in ${boot_devs}; do "	\
+		"run efi_${bootdev_s}_boot; "		\
+		"done;\0"				\
+	"efi_mmc_boot="					\
+		"setenv bootdev mmc;"			\
+		"setenv devtype  mmc;"			\
+		"if test ${bootmode} = flash; then "	\
+			"for mmc_devnum in ${mmc_devnum_l}; do "\
+				"setenv devnum ${mmc_devnum}; " \
+				"run scan_dev_for_boot_part;" \
+			"done;" 				\
+		"fi; "						\
+		"if test ${bootmode} = sd; then "	\
+			"setenv devnum ${sd_devnum};"	\
+			"run scan_dev_for_boot_part;" \
+		"fi; "					\
+		"if test ${bootmode} = emmc; then "	\
+			"setenv devnum	${emmc_devnum};"\
+			"run scan_dev_for_boot_part;" \
+		"fi; \0"				\
+	"efi_nvme_boot= run nvme_boot\0"
+#else
+#define JH7110_EFI_BOOTENV
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS			\
 	"fdt_high=0xffffffffffffffff\0"			\
 	"initrd_high=0xffffffffffffffff\0"		\
@@ -359,6 +387,7 @@
 	VF2_SDK_BOOTENV					\
 	JH7110_SDK_BOOTENV				\
 	JH7110_DISTRO_BOOTENV				\
+	JH7110_EFI_BOOTENV				\
 	CHIPA_GMAC_SET					\
 	CHIPA_GMAC_SET_NEW				\
 	CHIPA_SET					\
@@ -374,6 +403,8 @@
 	"type_guid_gpt_loader2=" TYPE_GUID_LOADER2 "\0" \
 	"type_guid_gpt_system=" TYPE_GUID_SYSTEM "\0"	\
 	"partitions=" PARTS_DEFAULT "\0"		\
+	"stdin=serial,usbkbd\0"				\
+	"stdout=vidconsole,serial\0"				\
 	BOOTENV						\
 	BOOTENV_SF
 

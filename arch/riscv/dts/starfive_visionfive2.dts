@@ -388,16 +388,11 @@
 };
 
 &usbdrd_cdns3 {
-	dr_mode = "peripheral";
+	dr_mode = "host";
 };
 
 &pcie0 {
-	pinctrl-names = "perst-default", "perst-active", "wake-default", "clkreq-default";
-	pinctrl-0 = <&pcie0_perst_default>;
-	pinctrl-1 = <&pcie0_perst_active>;
-	pinctrl-2 = <&pcie0_wake_default>;
-	pinctrl-3 = <&pcie0_clkreq_default>;
-	status = "okay";
+	status = "disabled";
 };
 
 &pcie1 {
@@ -426,7 +421,7 @@
 };
 
 &mipi_dsi0 {
-	status = "okay";
+	status = "disabled";
 	rockchip,panel = <&rm68200_panel>;
 	data-lanes-num = <1>;
 	display-timings {
@@ -447,7 +442,6 @@
 		pixelclk-active = <0>;
 		};
 	};
-
 };
 
 &hdmi{
@@ -467,11 +461,9 @@
 	status = "okay";
 
 	rm68200_panel: rm68200_panel@45 {
+		status = "disabled";
 		compatible = "starfive,seeed";
 		reg = <0x45>;
-
 	};
-
-
 };
 

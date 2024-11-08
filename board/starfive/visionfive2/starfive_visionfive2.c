@@ -242,26 +242,27 @@ static void jh7110_gmac_init(int chip_type, int pcb_type)
 
 static void jh7110_usb_init(bool usb2_enable)
 {
+	/*Not have usb-over-current gpio, set the config*/
+	clrsetbits_le32(SYS_IOMUX_BASE + SYS_IOMUX_32,
+		IOMUX_USB_MASK,
+		(0x01<<IOMUX_USB_SHIFT)&IOMUX_USB_MASK);
+
+	/*usb 2.0 utmi phy init*/
+	clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
+		USB_OTG_SUSPENDM_BYPS_MASK,
+		BIT(USB_OTG_SUSPENDM_BYPS_SHIFT)
+		& USB_OTG_SUSPENDM_BYPS_MASK);
+
+	clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
+		USB_PLL_EN_MASK,
+		BIT(USB_PLL_EN_SHIFT) & USB_PLL_EN_MASK);
+
+	clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
+		USB_REFCLK_MODE_MASK,
+		BIT(USB_REFCLK_MODE_SHIFT) & USB_REFCLK_MODE_MASK);
+
+	/*Only usb2*/
 	if (usb2_enable) {
-		/*usb 2.0 utmi phy init*/
-		clrsetbits_le32(STG_SYSCON_BASE  + STG_SYSCON_4,
-			USB_MODE_STRAP_MASK,
-			(2<<USB_MODE_STRAP_SHIFT) &
-			USB_MODE_STRAP_MASK);/*2:host mode, 4:device mode*/
-		clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
-			USB_OTG_SUSPENDM_BYPS_MASK,
-			BIT(USB_OTG_SUSPENDM_BYPS_SHIFT)
-			& USB_OTG_SUSPENDM_BYPS_MASK);
-		clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
-			USB_OTG_SUSPENDM_MASK,
-			BIT(USB_OTG_SUSPENDM_SHIFT) &
-			USB_OTG_SUSPENDM_MASK);/*HOST = 1. DEVICE = 0;*/
-		clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
-			USB_PLL_EN_MASK,
-			BIT(USB_PLL_EN_SHIFT) & USB_PLL_EN_MASK);
-		clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
-			USB_REFCLK_MODE_MASK,
-			BIT(USB_REFCLK_MODE_SHIFT) & USB_REFCLK_MODE_MASK);
 		/* usb 2.0 phy mode,REPLACE USB3.0 PHY module = 1;else = 0*/
 		clrsetbits_le32(SYS_SYSCON_BASE + SYS_SYSCON_24,
 			PDRSTN_SPLIT_MASK,
@@ -299,8 +300,17 @@ static void jh7110_usb_init(bool usb2_enable)
 			PDRSTN_SPLIT_MASK,
 			(0 << PDRSTN_SPLIT_SHIFT) & PDRSTN_SPLIT_MASK);
 	}
-	SYS_IOMUX_DOEN(25, LOW);
-	SYS_IOMUX_DOUT(25, 7);
+
+	/*set host mode*/
+	clrsetbits_le32(STG_SYSCON_BASE  + STG_SYSCON_4,
+		USB_MODE_STRAP_MASK,
+		(2<<USB_MODE_STRAP_SHIFT) &
+		USB_MODE_STRAP_MASK);/*2:host mode, 4:device mode*/
+
+	clrsetbits_le32(STG_SYSCON_BASE + STG_SYSCON_4,
+		USB_OTG_SUSPENDM_MASK,
+		BIT(USB_OTG_SUSPENDM_SHIFT) &
+		USB_OTG_SUSPENDM_MASK);/*HOST = 1. DEVICE = 0;*/
 }
 
 #if CONFIG_IS_ENABLED(STARFIVE_OTP)
@@ -424,10 +434,10 @@ int board_init(void)
 {
 	enable_caches();
 
-	jh7110_jtag_init();
 	jh7110_timer_init();
 
-	jh7110_usb_init(true);
+	/* enable usb 3.0 */
+	jh7110_usb_init(false);
 
 	jh7110_i2c_init(5);
 	jh7110_gpio_init();
