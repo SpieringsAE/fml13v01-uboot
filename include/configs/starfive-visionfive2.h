@@ -404,7 +404,7 @@
 	"type_guid_gpt_system=" TYPE_GUID_SYSTEM "\0"	\
 	"partitions=" PARTS_DEFAULT "\0"		\
 	"stdin=serial,usbkbd\0"				\
-	"stdout=vidconsole,serial\0"				\
+	"stdout=serial,vidconsole\0"				\
 	BOOTENV						\
 	BOOTENV_SF
 
