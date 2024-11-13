@@ -27,6 +27,7 @@
 #include <video_bridge.h>
 #include <power/pmic.h>
 #include <panel.h>
+#include <edid.h>
 
 #include "sf_vop.h"
 #include "sf_mipi.h"
@@ -428,7 +429,6 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 	if (!ofnode_valid(remote))
 		return -EINVAL;
 	remote_vop_id = ofnode_read_u32_default(remote, "reg", -1);
-	uc_priv->bpix = VIDEO_BPP16;
 	debug("remote_vop_id  %d\n", remote_vop_id);
 
 	/*
@@ -492,6 +492,8 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 	debug("vop_id  %d,compat = %s\n", vop_id,compat);
 	if(vop_id == VOP_MODE_HDMI)
 	{
+		int i;
+
 		disp_uc_plat = dev_get_uclass_plat(disp);
 		debug("Found device '%s', disp_uc_priv=%p\n", disp->name, disp_uc_plat);
 
@@ -499,62 +501,141 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 		disp_uc_plat->source_id = remote_vop_id;
 		disp_uc_plat->src_dev = dev;
 
-		ret = device_probe(disp);
+		do {
+			ret = device_probe(disp);
+			if (!ret)
+				break;
+			mdelay(100);
+		} while (++i < 20);
 		if (ret) {
-			debug("%s: device '%s' display won't probe (ret=%d)\n",
+			pr_err("%s: device '%s' display won't probe (ret=%d)\n",
 			  __func__, dev->name, ret);
 			return ret;
 		}
 
+		u8 edid[EDID_EXT_SIZE];
+		memset(edid, 0, sizeof(edid));
+		ret = display_read_edid(disp, edid, sizeof(edid));
+		if (ret <= 0)
+			pr_err("%s: Failed to read edid\n", __func__);
+		else {
+			int panel_bits_per_colour;
+			//edid_print_info((struct edid1_info*)edid);
+			edid_get_timing(edid, ret, &timing, &panel_bits_per_colour);
+			if (timing.hactive.typ == 2256 && timing.vactive.typ == 1504)
+				gBuiltinLCDActive = true;
+		}
+		pr_err("Display output: %s\n", gBuiltinLCDActive ? "Build-in LCD" : "HDMI");
+
 		ret = display_enable(disp, 1 << VIDEO_BPP32, &timing);
 		if (ret) {
-			debug("%s: Failed to read timings\n", __func__);
+			pr_err("%s: Failed to read timings\n", __func__);
 			return ret;
 		}
-		_SWITCH_CLOCK_CLK_U0_DC8200_CLK_PIX0_SOURCE_CLK_HDMITX0_PIXELCLK_;
-		dc_hw_init(dev);
 
-		uc_priv->xsize = 2256;
-		uc_priv->ysize = 1504;
+		if (!gBuiltinLCDActive) {
+			int err = clk_set_parent(&priv->dc_pix0, &priv->dc_pix_src);
+			if (err) {
+				debug("failed to set %s clock as %s's parent\n",
+					priv->dc_pix_src.dev->name, priv->dc_pix0.dev->name);
+				//return err;
+			}
+		
+			ulong new_rate = clk_set_rate(&priv->dc_pix_src, 148500000);
+			debug("new_rate  %ld\n", new_rate);
 
-		writel(0xc0001fff, priv->regs_hi+0x00000014);
-		writel(0x00002000, priv->regs_hi+0x00001cc0);
-		//writel(uc_plat->base+0x1fa400, priv->regs_hi+0x00001530);
-		writel(0x00000000, priv->regs_hi+0x00001800);
-		writel(0x00000000, priv->regs_hi+0x000024d8);
-		writel(0x02f008d0, priv->regs_hi+0x000024e0);
-		writel(0x02f008d0, priv->regs_hi+0x00001810);
-		writel(uc_plat->base, priv->regs_hi+0x00001400);
-		writel(0x000011a0, priv->regs_hi+0x00001408);
-		writel(0x00000f61, priv->regs_hi+0x00001ce8);
-		writel(0x00002042, priv->regs_hi+0x00002510);
-		writel(0x808a3156, priv->regs_hi+0x00002508);
-		writel(0x8008e1b2, priv->regs_hi+0x00002500);
-		writel(0x10000000, priv->regs_hi+0x00001518);
-		writel(0x00003000, priv->regs_hi+0x00001cc0);
-		writel(0x00130000, priv->regs_hi+0x00001540);
-		writel(0x00000001, priv->regs_hi+0x00002540);
-		writel(0x80130000, priv->regs_hi+0x00001540);
-		writel(0x00130000, priv->regs_hi+0x00001544);
-		writel(0x00000002, priv->regs_hi+0x00002544);
-		writel(0x80130000, priv->regs_hi+0x00001544);
-		writel(0x00130000, priv->regs_hi+0x00001548);
-		writel(0x0000000c, priv->regs_hi+0x00002548);
-		writel(0x80130000, priv->regs_hi+0x00001548);
-		writel(0x00130000, priv->regs_hi+0x0000154c);
-		writel(0x0000000d, priv->regs_hi+0x0000254c);
-		writel(0x80130000, priv->regs_hi+0x0000154c);
-		writel(0x00000001, priv->regs_hi+0x00002518);
-		writel(0x00000000, priv->regs_hi+0x00001a28);
-		writel(0x09e808d0, priv->regs_hi+0x00001430);
-		writel(0x44900900, priv->regs_hi+0x00001438);
-		writel(0x060d05e0, priv->regs_hi+0x00001440);
-		writel(0xc2f485e3, priv->regs_hi+0x00001448);
-		writel(0x00000000, priv->regs_hi+0x000014b0);
-		writel(0x0000000a, priv->regs_hi+0x00001cd0);
-		writel(0x00000005, priv->regs_hi+0x000014b8);
-		//writel(0x00000052, priv->regs_hi+0x000014d0);
-		writel(0xffffffff, priv->regs_hi+0x00001528);
+			dc_hw_init(dev);
+
+			uc_priv->xsize = 1920;
+			uc_priv->ysize = 1080;
+			uc_priv->bpix = VIDEO_BPP32;
+
+			writel(0xc0001fff, priv->regs_hi+0x00000014);
+			writel(0x00002000, priv->regs_hi+0x00001cc0);
+			//writel(uc_plat->base+0x1fa400, priv->regs_hi+0x00001530);
+			writel(0x00000000, priv->regs_hi+0x00001800);
+			writel(0x00000000, priv->regs_hi+0x000024d8);
+			writel(0x021c0780, priv->regs_hi+0x000024e0);
+			writel(0x021c0780, priv->regs_hi+0x00001810);
+			writel(uc_plat->base, priv->regs_hi+0x00001400);
+			writel(0x00001e00, priv->regs_hi+0x00001408);
+			writel(0x00000f61, priv->regs_hi+0x00001ce8);
+			writel(0x00002042, priv->regs_hi+0x00002510);
+			writel(0x808a3156, priv->regs_hi+0x00002508);
+			writel(0x8008e1b2, priv->regs_hi+0x00002500);
+			writel(0x18000000, priv->regs_hi+0x00001518);
+			writel(0x00003000, priv->regs_hi+0x00001cc0);
+			writel(0x00060000, priv->regs_hi+0x00001540);
+			writel(0x00000001, priv->regs_hi+0x00002540);
+			writel(0x80060000, priv->regs_hi+0x00001540);
+			writel(0x00060000, priv->regs_hi+0x00001544);
+			writel(0x00000002, priv->regs_hi+0x00002544);
+			writel(0x80060000, priv->regs_hi+0x00001544);
+			writel(0x00060000, priv->regs_hi+0x00001548);
+			writel(0x0000000c, priv->regs_hi+0x00002548);
+			writel(0x80060000, priv->regs_hi+0x00001548);
+			writel(0x00060000, priv->regs_hi+0x0000154c);
+			writel(0x0000000d, priv->regs_hi+0x0000254c);
+			writel(0x80060000, priv->regs_hi+0x0000154c);
+			writel(0x00000001, priv->regs_hi+0x00002518);
+			writel(0x00000000, priv->regs_hi+0x00001a28);
+			writel(0x08980780, priv->regs_hi+0x00001430);
+			writel(0x440207d8, priv->regs_hi+0x00001438);
+			writel(0x04650438, priv->regs_hi+0x00001440);
+			writel(0x4220843c, priv->regs_hi+0x00001448);
+			writel(0x00000000, priv->regs_hi+0x000014b0);
+			writel(0x000000d2, priv->regs_hi+0x00001cd0);
+			writel(0x00000005, priv->regs_hi+0x000014b8);
+			writel(0x00000052, priv->regs_hi+0x000014d0);
+			writel(0xdeadbeef, priv->regs_hi+0x00001528);
+		}
+		else {
+			_SWITCH_CLOCK_CLK_U0_DC8200_CLK_PIX0_SOURCE_CLK_HDMITX0_PIXELCLK_;
+			dc_hw_init(dev);
+
+			uc_priv->xsize = 2256;
+			uc_priv->ysize = 1504;
+			uc_priv->bpix = VIDEO_BPP16;
+
+			writel(0xc0001fff, priv->regs_hi+0x00000014);
+			writel(0x00002000, priv->regs_hi+0x00001cc0);
+			//writel(uc_plat->base+0x1fa400, priv->regs_hi+0x00001530);
+			writel(0x00000000, priv->regs_hi+0x00001800);
+			writel(0x00000000, priv->regs_hi+0x000024d8);
+			writel(0x02f008d0, priv->regs_hi+0x000024e0);
+			writel(0x02f008d0, priv->regs_hi+0x00001810);
+			writel(uc_plat->base, priv->regs_hi+0x00001400);
+			writel(0x000011a0, priv->regs_hi+0x00001408);
+			writel(0x00000f61, priv->regs_hi+0x00001ce8);
+			writel(0x00002042, priv->regs_hi+0x00002510);
+			writel(0x808a3156, priv->regs_hi+0x00002508);
+			writel(0x8008e1b2, priv->regs_hi+0x00002500);
+			writel(0x10000000, priv->regs_hi+0x00001518);
+			writel(0x00003000, priv->regs_hi+0x00001cc0);
+			writel(0x00130000, priv->regs_hi+0x00001540);
+			writel(0x00000001, priv->regs_hi+0x00002540);
+			writel(0x80130000, priv->regs_hi+0x00001540);
+			writel(0x00130000, priv->regs_hi+0x00001544);
+			writel(0x00000002, priv->regs_hi+0x00002544);
+			writel(0x80130000, priv->regs_hi+0x00001544);
+			writel(0x00130000, priv->regs_hi+0x00001548);
+			writel(0x0000000c, priv->regs_hi+0x00002548);
+			writel(0x80130000, priv->regs_hi+0x00001548);
+			writel(0x00130000, priv->regs_hi+0x0000154c);
+			writel(0x0000000d, priv->regs_hi+0x0000254c);
+			writel(0x80130000, priv->regs_hi+0x0000154c);
+			writel(0x00000001, priv->regs_hi+0x00002518);
+			writel(0x00000000, priv->regs_hi+0x00001a28);
+			writel(0x09e808d0, priv->regs_hi+0x00001430);
+			writel(0x44900900, priv->regs_hi+0x00001438);
+			writel(0x060d05e0, priv->regs_hi+0x00001440);
+			writel(0xc2f485e3, priv->regs_hi+0x00001448);
+			writel(0x00000000, priv->regs_hi+0x000014b0);
+			writel(0x0000000a, priv->regs_hi+0x00001cd0);
+			writel(0x00000005, priv->regs_hi+0x000014b8);
+			//writel(0x00000052, priv->regs_hi+0x000014d0);
+			writel(0xffffffff, priv->regs_hi+0x00001528);
+		}
 		writel(0x00001111, priv->regs_hi+0x00001418);
 		writel(0x00000000, priv->regs_hi+0x00001410);
 		writel(0x00000000, priv->regs_hi+0x00002518);

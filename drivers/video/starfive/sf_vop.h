@@ -120,4 +120,6 @@ int rk_vop_bind(struct udevice *dev);
 void rk_vop_probe_regulators(struct udevice *dev,
 			     const char * const *names, int cnt);
 
+extern bool gBuiltinLCDActive;
+
 #endif

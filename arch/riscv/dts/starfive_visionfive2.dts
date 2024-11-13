@@ -245,6 +245,20 @@
 		};
 	};
 
+	i2c1_pins: i2c1-0 {
+		i2c-pins {
+			pinmux = <GPIOMUX(0, GPOUT_LOW,
+				  GPOEN_SYS_I2C1_CLK,
+				  GPI_SYS_I2C1_CLK)>,
+				 <GPIOMUX(1, GPOUT_LOW,
+				  GPOEN_SYS_I2C1_DATA,
+				  GPI_SYS_I2C1_DATA)>;
+			bias-disable; /* external pull-up */
+			input-enable;
+			input-schmitt-enable;
+		};
+	};
+
 	i2c2_pins: i2c2-0 {
 		i2c-pins {
 			pinmux = <GPIOMUX(3, GPOUT_LOW,
@@ -447,6 +461,18 @@
 &hdmi{
 	pinctrl-names = "default";
 	pinctrl-0 = <&hdmi_pins>;
+	ddc-i2c-bus = <&i2c1>;
+	status = "okay";
+};
+
+&i2c1 {
+	clock-frequency = <100000>;
+	i2c-sda-hold-time-ns = <300>;
+	i2c-sda-falling-time-ns = <3000>;
+	i2c-scl-falling-time-ns = <3000>;
+	auto_calc_scl_lhcnt;
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
 };
 
