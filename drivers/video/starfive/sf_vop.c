@@ -414,6 +414,10 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 	ofnode remote;
 	const char *compat;
 	struct display_plat *disp_uc_plat;
+	u8 edid[EDID_EXT_SIZE];
+	int panel_bits_per_colour;
+	int try_cnt = 10;
+
 	debug("%s(%s, 0x%lx, %s)\n", __func__,
 			  dev_read_name(dev), fbbase, ofnode_get_name(ep_node));
 
@@ -492,40 +496,41 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 	debug("vop_id  %d,compat = %s\n", vop_id,compat);
 	if(vop_id == VOP_MODE_HDMI)
 	{
-		int i;
-
 		disp_uc_plat = dev_get_uclass_plat(disp);
 		debug("Found device '%s', disp_uc_priv=%p\n", disp->name, disp_uc_plat);
-
 
 		disp_uc_plat->source_id = remote_vop_id;
 		disp_uc_plat->src_dev = dev;
 
-		do {
+		mdelay(1500);
+		while (try_cnt-- > 0) {
 			ret = device_probe(disp);
-			if (!ret)
-				break;
+			if (!ret) {
+				ret = display_read_edid(disp, edid, sizeof(edid));
+				if (ret <= 0) {
+					pr_err("%s: Failed to read edid\n", __func__);
+					ret = -EACCES;
+				}
+				else {
+					ret = edid_get_timing(edid, sizeof(edid), &timing, &panel_bits_per_colour);
+					if (ret)
+						pr_err("%s: Failed to get edid timing\n", __func__);
+					else {
+						if (timing.hactive.typ == 2256 && timing.vactive.typ == 1504)
+							gBuiltinLCDActive = true;
+						pr_err("Display output: %s\n", gBuiltinLCDActive ? "Build-in LCD" : "HDMI");
+						break;
+					}
+				}
+			}
+
 			mdelay(100);
-		} while (++i < 20);
+		}
 		if (ret) {
 			pr_err("%s: device '%s' display won't probe (ret=%d)\n",
-			  __func__, dev->name, ret);
+				__func__, dev->name, ret);
 			return ret;
 		}
-
-		u8 edid[EDID_EXT_SIZE];
-		memset(edid, 0, sizeof(edid));
-		ret = display_read_edid(disp, edid, sizeof(edid));
-		if (ret <= 0)
-			pr_err("%s: Failed to read edid\n", __func__);
-		else {
-			int panel_bits_per_colour;
-			//edid_print_info((struct edid1_info*)edid);
-			edid_get_timing(edid, ret, &timing, &panel_bits_per_colour);
-			if (timing.hactive.typ == 2256 && timing.vactive.typ == 1504)
-				gBuiltinLCDActive = true;
-		}
-		pr_err("Display output: %s\n", gBuiltinLCDActive ? "Build-in LCD" : "HDMI");
 
 		ret = display_enable(disp, 1 << VIDEO_BPP32, &timing);
 		if (ret) {
@@ -538,7 +543,7 @@ static int sf_display_init(struct udevice *dev, ulong fbbase, ofnode ep_node)
 			if (err) {
 				debug("failed to set %s clock as %s's parent\n",
 					priv->dc_pix_src.dev->name, priv->dc_pix0.dev->name);
-				//return err;
+				return err;
 			}
 		
 			ulong new_rate = clk_set_rate(&priv->dc_pix_src, 148500000);
