@@ -4583,4 +4583,4 @@ Notes:
 * Remember that there is a size limit of 100 kB per message on the
   u-boot mailing list. Bigger patches will be moderated. If they are
   reasonable and not too big, they will be acknowledged. But patches
-  bigger than the size limit should be avoided.
+  bigger than the size limit should be avoided.  
