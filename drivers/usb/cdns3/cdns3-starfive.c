@@ -12,6 +12,7 @@
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <linux/usb/otg.h>
+#include <dm/lists.h>
 #include <reset.h>
 #include <regmap.h>
 #include <syscon.h>
